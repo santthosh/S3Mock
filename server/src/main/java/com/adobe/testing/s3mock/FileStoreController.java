@@ -31,36 +31,14 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.PARTIAL_CONTENT;
 import static org.springframework.http.HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE;
 
-import com.adobe.testing.s3mock.domain.Bucket;
-import com.adobe.testing.s3mock.domain.BucketContents;
-import com.adobe.testing.s3mock.domain.FileStore;
-import com.adobe.testing.s3mock.domain.S3Exception;
-import com.adobe.testing.s3mock.domain.S3Object;
-import com.adobe.testing.s3mock.dto.BatchDeleteRequest;
-import com.adobe.testing.s3mock.dto.BatchDeleteResponse;
-import com.adobe.testing.s3mock.dto.CompleteMultipartUploadResult;
-import com.adobe.testing.s3mock.dto.CopyObjectResult;
-import com.adobe.testing.s3mock.dto.CopyPartResult;
-import com.adobe.testing.s3mock.dto.DeletedObject;
-import com.adobe.testing.s3mock.dto.InitiateMultipartUploadResult;
-import com.adobe.testing.s3mock.dto.ListAllMyBucketsResult;
-import com.adobe.testing.s3mock.dto.ListBucketResult;
-import com.adobe.testing.s3mock.dto.ListMultipartUploadsResult;
-import com.adobe.testing.s3mock.dto.ListPartsResult;
-import com.adobe.testing.s3mock.dto.MultipartUpload;
-import com.adobe.testing.s3mock.dto.ObjectRef;
-import com.adobe.testing.s3mock.dto.Owner;
-import com.adobe.testing.s3mock.dto.Range;
+import com.adobe.testing.s3mock.domain.*;
+import com.adobe.testing.s3mock.dto.*;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.servlet.ServletInputStream;
@@ -476,6 +454,36 @@ class FileStoreController {
         Files.copy(s3Object.getDataFile().toPath(), outputStream);
       }
     }
+  }
+
+  /**
+   * Returns the File identified by bucketName and fileName
+   *
+   * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+   *
+   * @param bucketName The Buckets names
+   */
+  @RequestMapping(
+          value = "/{bucketName:.+}/**",
+          params = "tagging",
+          method = RequestMethod.GET)
+  public ResponseEntity<GetObjectTaggingResult> getObjectTagging(@PathVariable final String bucketName,
+                                  final HttpServletRequest request) {
+    final String filename = filenameFrom(bucketName, request);
+
+    verifyBucketExistence(bucketName);
+
+    final S3Object s3Object = verifyObjectExistence(bucketName, filename);
+
+    List<Tag> tagList = new ArrayList<>();
+    tagList.addAll(s3Object.getTags());
+    GetObjectTaggingResult result = new GetObjectTaggingResult(tagList);
+
+    final HttpHeaders responseHeaders = new HttpHeaders();
+    responseHeaders.setETag("\"" + s3Object.getMd5() + "\"");
+    responseHeaders.setLastModified(s3Object.getLastModified());
+
+    return ResponseEntity.ok(result);
   }
 
   private void addUserMetadata(final BiConsumer<String, String> responseHeaders,

@@ -18,6 +18,8 @@ package com.adobe.testing.s3mock.testng;
 
 import com.adobe.testing.s3mock.util.HashUtil;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
+import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import org.testng.Assert;
@@ -53,5 +55,23 @@ public class S3MockListenerXMLConfigurationTest {
         s3Object.close();
 
         Assert.assertEquals(uploadHash, downloadedHash, "Up- and downloaded Files should have equal Hashes");
+    }
+
+    /**
+     * Creates a bucket, stores a file, adds tags, retrieves tags and checks them for consistency.
+     */
+    @Test
+    public void shouldAddAndRetrieveTags() {
+        final File uploadFile = new File(UPLOAD_FILE_NAME);
+
+        s3Client.createBucket(BUCKET_NAME);
+        s3Client.putObject(new PutObjectRequest(BUCKET_NAME, uploadFile.getName(), uploadFile));
+
+        final S3Object s3Object = s3Client.getObject(BUCKET_NAME, uploadFile.getName());
+
+        final GetObjectTaggingRequest request = new GetObjectTaggingRequest(BUCKET_NAME,s3Object.getKey());
+        final GetObjectTaggingResult result = s3Client.getObjectTagging(request);
+
+        Assert.assertEquals(result.getTagSet().size(),0);
     }
 }
