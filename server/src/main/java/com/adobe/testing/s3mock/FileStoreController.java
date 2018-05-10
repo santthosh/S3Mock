@@ -34,6 +34,7 @@ import static org.springframework.http.HttpStatus.REQUESTED_RANGE_NOT_SATISFIABL
 import com.adobe.testing.s3mock.domain.*;
 import com.adobe.testing.s3mock.dto.*;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -457,9 +458,9 @@ class FileStoreController {
   }
 
   /**
-   * Returns the File identified by bucketName and fileName
+   * Returns the tags identified by bucketName and fileName
    *
-   * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+   * https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGETtagging.html
    *
    * @param bucketName The Buckets names
    */
@@ -467,7 +468,7 @@ class FileStoreController {
           value = "/{bucketName:.+}/**",
           params = "tagging",
           method = RequestMethod.GET)
-  public ResponseEntity<GetObjectTaggingResult> getObjectTagging(@PathVariable final String bucketName,
+  public ResponseEntity<Tagging> getObjectTagging(@PathVariable final String bucketName,
                                   final HttpServletRequest request) {
     final String filename = filenameFrom(bucketName, request);
 
@@ -477,13 +478,46 @@ class FileStoreController {
 
     List<Tag> tagList = new ArrayList<>();
     tagList.addAll(s3Object.getTags());
-    GetObjectTaggingResult result = new GetObjectTaggingResult(tagList);
+    Tagging result = new Tagging(tagList);
 
     final HttpHeaders responseHeaders = new HttpHeaders();
     responseHeaders.setETag("\"" + s3Object.getMd5() + "\"");
     responseHeaders.setLastModified(s3Object.getLastModified());
 
     return ResponseEntity.ok(result);
+  }
+
+  /**
+   * Returns the File identified by bucketName and fileName
+   *
+   * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+   *
+   * @param bucketName The Buckets names
+   */
+  @RequestMapping(
+          value = "/{bucketName:.+}/**",
+          params = "tagging",
+          method = RequestMethod.PUT)
+  public ResponseEntity<String> putObjectTagging(@PathVariable final String bucketName,
+       @RequestBody final Tagging body,
+       final HttpServletRequest request) {
+    final String filename = filenameFrom(bucketName, request);
+
+    verifyBucketExistence(bucketName);
+
+    final S3Object s3Object = verifyObjectExistence(bucketName, filename);
+
+    try {
+      fileStore.setObjectTags(bucketName,filename,body.getTagSet());
+      final HttpHeaders responseHeaders = new HttpHeaders();
+      responseHeaders.setETag("\"" + s3Object.getMd5() + "\"");
+      responseHeaders.setLastModified(s3Object.getLastModified());
+
+      return new ResponseEntity<>(responseHeaders,OK);
+    } catch (IOException e) {
+      LOG.error("Tags could not be set!", e);
+      return new ResponseEntity<>(e.getMessage(), INTERNAL_SERVER_ERROR);
+    }
   }
 
   private void addUserMetadata(final BiConsumer<String, String> responseHeaders,

@@ -17,6 +17,7 @@ package com.adobe.testing.s3mock.dto;
 
 import com.adobe.testing.s3mock.domain.Tag;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.annotations.XStreamInclude;
 
 import java.util.ArrayList;
@@ -27,14 +28,17 @@ import java.util.List;
  */
 @XStreamAlias("Tagging")
 @XStreamInclude(Tag.class)
-public class GetObjectTaggingResult {
+public class Tagging {
     @XStreamAlias("TagSet")
     private List<Tag> tagSet = new ArrayList<>();
 
     @XStreamAlias("VersionId")
     private String versionId;
 
-    public GetObjectTaggingResult(List<Tag> tagSet) {
+    public Tagging() {
+    }
+
+    public Tagging(List<Tag> tagSet) {
         this.tagSet = tagSet;
         this.versionId = "0";
     }

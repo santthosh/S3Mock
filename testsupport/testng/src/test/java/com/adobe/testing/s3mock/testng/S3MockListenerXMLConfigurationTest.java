@@ -18,16 +18,15 @@ package com.adobe.testing.s3mock.testng;
 
 import com.adobe.testing.s3mock.util.HashUtil;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
-import com.amazonaws.services.s3.model.GetObjectTaggingResult;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 @Test
 public class S3MockListenerXMLConfigurationTest {
@@ -69,9 +68,23 @@ public class S3MockListenerXMLConfigurationTest {
 
         final S3Object s3Object = s3Client.getObject(BUCKET_NAME, uploadFile.getName());
 
-        final GetObjectTaggingRequest request = new GetObjectTaggingRequest(BUCKET_NAME,s3Object.getKey());
-        final GetObjectTaggingResult result = s3Client.getObjectTagging(request);
+        GetObjectTaggingRequest getObjectTaggingRequest = new GetObjectTaggingRequest(BUCKET_NAME,s3Object.getKey());
+        GetObjectTaggingResult getObjectTaggingResult = s3Client.getObjectTagging(getObjectTaggingRequest);
 
-        Assert.assertEquals(result.getTagSet().size(),0);
+        // There shouldn't be any tags here
+        Assert.assertEquals(getObjectTaggingResult.getTagSet().size(),0);
+
+        List<Tag> tagList = new ArrayList<>();
+        tagList.add(new Tag("foo","bar"));
+
+        final SetObjectTaggingRequest setObjectTaggingRequest = new SetObjectTaggingRequest(BUCKET_NAME,s3Object.getKey(),new ObjectTagging(tagList));
+        final SetObjectTaggingResult setObjectTaggingResult = s3Client.setObjectTagging(setObjectTaggingRequest);
+
+        getObjectTaggingRequest = new GetObjectTaggingRequest(BUCKET_NAME,s3Object.getKey());
+        getObjectTaggingResult = s3Client.getObjectTagging(getObjectTaggingRequest);
+
+        // There should be 'foo:bar' here
+        Assert.assertEquals(getObjectTaggingResult.getTagSet().size(),1);
+        Assert.assertEquals(getObjectTaggingResult.getTagSet().get(0).getValue(),"bar");
     }
 }

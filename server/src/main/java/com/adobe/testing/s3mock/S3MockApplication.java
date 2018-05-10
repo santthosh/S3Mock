@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toList;
 import com.adobe.testing.s3mock.domain.Bucket;
 import com.adobe.testing.s3mock.domain.FileStore;
 import com.adobe.testing.s3mock.domain.KMSKeyStore;
+import com.adobe.testing.s3mock.domain.Tag;
 import com.adobe.testing.s3mock.dto.*;
 import com.adobe.testing.s3mock.util.ObjectRefConverter;
 import com.adobe.testing.s3mock.util.RangeConverter;
@@ -315,13 +316,14 @@ public class S3MockApplication {
           CopyObjectResult.class,
           CopyPartResult.class,
           ErrorResponse.class,
-          GetObjectTaggingResult.class,
+          Tagging.class,
+          Tag.class,
           InitiateMultipartUploadResult.class,
           ListAllMyBucketsResult.class,
           ListBucketResult.class,
           ListMultipartUploadsResult.class,
           ListPartsResult.class,
-          Owner.class,
+          Owner.class
       };
 
       final XStreamMarshaller xstreamMarshaller = new XStreamMarshaller() {

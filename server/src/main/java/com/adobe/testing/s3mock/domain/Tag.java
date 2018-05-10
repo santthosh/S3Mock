@@ -28,6 +28,9 @@ public class Tag {
     @XStreamAlias("Value")
     private String value;
 
+    public Tag() {
+    }
+
     public Tag(final String key,
                final String value) {
         this.key = key;
